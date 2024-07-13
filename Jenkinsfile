@@ -28,12 +28,12 @@ pipeline {
                 script {
                     try {
                         // Print Docker container status
-                        sh "sudo docker ps -a"
+                        sh "docker ps -a"
                     } catch (Exception e) {
                         echo "Error in final stage: ${e.getMessage()}"
                     } finally {
                         // Clean up Docker containers
-                        sh "sudo docker rm -f \$(sudo docker ps -a -q)"
+                        sh "docker rm -f \$(docker ps -a -q)"
                     }
                 }
             }
