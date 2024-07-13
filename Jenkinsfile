@@ -19,8 +19,8 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    docker.withRegistry('', '1234') {
-                        def customImage = docker.build "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    docker.withRegistry('https://index.docker.io/v1/', '1234') {
+                        def customImage = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
                         customImage.push()
                     }
                 }
