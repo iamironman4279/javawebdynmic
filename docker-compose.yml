@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bankapp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 4279
+      MYSQL_DATABASE: bankapp
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bankapp-network
+
+  tomcat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bankapp-tomcat
+    container_name: bankapp-tomcat-container
+    networks:
+      - bankapp-network
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+networks:
+  bankapp-network:
+    driver: bridge
