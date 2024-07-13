@@ -19,7 +19,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    docker.withRegistry('', 'dockerhub') {
+                    docker.withRegistry('', '1234') {
                         def customImage = docker.build "${IMAGE_NAME}:${env.BUILD_NUMBER}"
                         customImage.push()
                     }
