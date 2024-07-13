@@ -2,10 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_VERSION = '1.29.2'
-        IMAGE_NAME = 'bankapp-tomcat'
-        APP_PORT = '8082'
-        SUDO_CREDENTIALS = credentials('my-sudo-credentials') // Replace with your actual Jenkins credential ID
+        IMAGE_NAME = 'bankapp-tomcat'    // Update with your desired image name
     }
 
     stages {
@@ -17,45 +14,28 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Switch to root user with sudo su and run subsequent commands
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S su -"
-                    sh "apt update"
-                    sh "apt install -y python3-pip"
-                    sh "pip3 install docker-compose==${DOCKER_COMPOSE_VERSION}"
-                }
-            }
-        }
-
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME}:7 ."
-                }
-            }
-        }
-
-        stage('Setup Docker Network') {
-            steps {
-                script {
-                    sh "docker network create bankapp-network"
-                }
-            }
-        }
-
-        stage('Deploy Docker Containers') {
-            steps {
-                script {
-                    sh "docker-compose -f docker-compose.yml up -d --build"
+                    // Build Docker image
+                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ."
                 }
             }
         }
 
         stage('Finalize') {
             steps {
-                echo "Final cleanup or notifications can go here"
+                script {
+                    try {
+                        // Print Docker container status
+                        sh "sudo docker ps -a"
+                    } catch (Exception e) {
+                        echo "Error in final stage: ${e.getMessage()}"
+                    } finally {
+                        // Clean up Docker containers
+                        sh "sudo docker rm -f \$(sudo docker ps -a -q)"
+                    }
+                }
             }
         }
     }
