@@ -5,7 +5,7 @@ pipeline {
         DOCKER_COMPOSE_VERSION = '1.29.2'
         IMAGE_NAME = 'bankapp-tomcat'
         APP_PORT = '8082'
-        SUDO_CREDENTIALS = credentials('sudo-credentials') // Replace with your actual Jenkins credential ID
+        SUDO_CREDENTIALS = credentials('my-sudo-credentials') // Replace with your actual Jenkins credential ID
     }
 
     stages {
@@ -20,9 +20,11 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S apt update"
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S apt install -y python3-pip"
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S pip3 install docker-compose==${DOCKER_COMPOSE_VERSION}"
+                    // Switch to root user with sudo su and run subsequent commands
+                    sh "echo ${SUDO_CREDENTIALS} | sudo -S su -"
+                    sh "apt update"
+                    sh "apt install -y python3-pip"
+                    sh "pip3 install docker-compose==${DOCKER_COMPOSE_VERSION}"
                 }
             }
         }
@@ -30,7 +32,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                    sh "docker build -t ${IMAGE_NAME}:7 ."
                 }
             }
         }
@@ -38,7 +40,7 @@ pipeline {
         stage('Setup Docker Network') {
             steps {
                 script {
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S docker network create bankapp-network || true"
+                    sh "docker network create bankapp-network"
                 }
             }
         }
@@ -46,24 +48,14 @@ pipeline {
         stage('Deploy Docker Containers') {
             steps {
                 script {
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S docker-compose -f docker-compose.yml up -d --build"
-                }
-            }
-        }
-
-        stage('Check Docker Containers') {
-            steps {
-                script {
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S docker ps -a"
+                    sh "docker-compose -f docker-compose.yml up -d --build"
                 }
             }
         }
 
         stage('Finalize') {
             steps {
-                script {
-                    sh "echo ${SUDO_CREDENTIALS} | sudo -S docker-compose -f docker-compose.yml down"
-                }
+                echo "Final cleanup or notifications can go here"
             }
         }
     }
