@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+
     environment {
         DOCKER_COMPOSE_VERSION = '1.29.2' // Update with your Docker Compose version
         IMAGE_NAME = 'bankapp-tomcat'    // Update with your desired image name
@@ -10,14 +10,16 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
+                          userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
+                ])
             }
         }
 
         stage('Build Docker Images') {
             steps {
                 script {
-                    docker.withRegistry('','dockerhub') {
+                    docker.withRegistry('', 'dockerhub') {
                         def customImage = docker.build "${IMAGE_NAME}:${env.BUILD_NUMBER}"
                         customImage.push()
                     }
