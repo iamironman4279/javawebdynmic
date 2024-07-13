@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKER_COMPOSE_VERSION = '1.29.2' // Update with your Docker Compose version
         IMAGE_NAME = 'bankapp-tomcat'    // Update with your desired image name
+        APP_PORT = '8082'                // Application port
     }
 
     stages {
