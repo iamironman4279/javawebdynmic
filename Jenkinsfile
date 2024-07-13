@@ -5,27 +5,25 @@ pipeline {
         DOCKER_COMPOSE_VERSION = '1.29.2' // Update with your Docker Compose version
         IMAGE_NAME = 'bankapp-tomcat'    // Update with your desired image name
         APP_PORT = '8082'                // Application port
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // Update with your Docker Hub credentials ID
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
+                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
                           userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
                 ])
             }
         }
 
-        stage('Install Docker Compose') {
+        stage('Install Dependencies') {
             steps {
                 script {
-                    // Update package index
+                    // Update package index and install Python3 pip
                     sh 'sudo apt update'
-
-                    // Install dependencies
                     sh 'sudo apt install -y python3-pip'
-
-                    // Install docker-compose via pip
+                    // Install Docker Compose via pip
                     sh 'sudo pip3 install docker-compose==${DOCKER_COMPOSE_VERSION}'
                 }
             }
@@ -34,10 +32,8 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', '1234') {
-                        def customImage = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
-                        customImage.push()
-                    }
+                    // Build Docker image
+                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ."
                 }
             }
         }
@@ -45,7 +41,8 @@ pipeline {
         stage('Setup Docker Network') {
             steps {
                 script {
-                    sh "docker network create bankapp-network || true"
+                    // Create Docker network if it doesn't exist
+                    sh "sudo docker network create bankapp-network || true"
                 }
             }
         }
@@ -53,7 +50,8 @@ pipeline {
         stage('Deploy Docker Containers') {
             steps {
                 script {
-                    sh "docker-compose -f docker-compose.yml up -d --build"
+                    // Deploy Docker containers using docker-compose
+                    sh "sudo docker-compose -f docker-compose.yml up -d --build"
                 }
             }
         }
@@ -62,11 +60,13 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "docker ps -a"
+                        // Print Docker container status
+                        sh "sudo docker ps -a"
                     } catch (Exception e) {
                         echo "Error in final stage: ${e.getMessage()}"
                     } finally {
-                        sh "docker-compose -f docker-compose.yml down"
+                        // Shut down Docker containers
+                        sh "sudo docker-compose -f docker-compose.yml down"
                     }
                 }
             }
