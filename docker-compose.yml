@@ -21,9 +21,7 @@ services:
     networks:
       - bankapp-network
     ports:
-      - "8080:8080"
-    depends_on:
-      - mysql
+      - "8082:8082"   # Host port 8082 maps to container port 8082
 
 networks:
   bankapp-network:
