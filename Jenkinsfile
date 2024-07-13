@@ -16,11 +16,28 @@ pipeline {
             }
         }
 
+        stage('Install Docker Compose') {
+            steps {
+                script {
+                    // Update package index
+                    sh 'sudo apt update'
+
+                    // Install dependencies
+                    sh 'sudo apt install -y python3-pip'
+
+                    // Install docker-compose via pip
+                    sh 'sudo pip3 install docker-compose==${DOCKER_COMPOSE_VERSION}'
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 script {
-                    def customImage = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
-                    // Do not push the image to Docker Hub
+                    docker.withRegistry('https://index.docker.io/v1/', '1234') {
+                        def customImage = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        customImage.push()
+                    }
                 }
             }
         }
