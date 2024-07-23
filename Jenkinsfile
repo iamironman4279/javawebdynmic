@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'bankapp-tomcat'
-        DOCKER_CREDENTIALS_ID = '4279'
-        DOCKER_REGISTRY = 'docker.io'
         DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
+        DOCKER_TAG = '3'
+        CONTAINER_NAME = 'bankapp_container'
         CONTAINER_PORT = '5000'
     }
 
@@ -18,25 +18,11 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Pull Docker Image') {
             steps {
                 script {
-                    // Build Docker image
-                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ."
-                }
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                script {
-                    // Log in to DockerHub
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin ${DOCKER_REGISTRY}"
-                    }
-                    // Tag and push Docker image
-                    sh "docker tag ${IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_REPO}:${env.BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_REPO}:${env.BUILD_NUMBER}"
+                    // Pull Docker image from Docker Hub
+                    sh "docker pull ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
         }
@@ -44,24 +30,20 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Run Docker container
-                    sh "docker run -d -p ${CONTAINER_PORT}:5000 --name ${IMAGE_NAME}_${env.BUILD_NUMBER} ${DOCKER_REPO}:${env.BUILD_NUMBER}"
+                    // Stop and remove existing container if it exists
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                    
+                    // Run Docker container on port 5000
+                    sh "docker run -d -p ${CONTAINER_PORT}:5000 --name ${CONTAINER_NAME} ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
         }
 
-        stage('Finalize') {
+        stage('Verify') {
             steps {
                 script {
-                    try {
-                        // Print Docker container status
-                        sh "docker ps -a"
-                    } catch (Exception e) {
-                        echo "Error in final stage: ${e.getMessage()}"
-                    } finally {
-                        // Clean up Docker containers
-                        sh "docker rm -f \$(docker ps -a -q)"
-                    }
+                    // Verify that the container is running
+                    sh "docker ps"
                 }
             }
         }
