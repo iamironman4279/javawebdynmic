@@ -6,7 +6,8 @@ pipeline {
         DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
         DOCKER_TAG = 'latest' // Update this to the correct tag
         CONTAINER_NAME = 'bankapp_container'
-        CONTAINER_PORT = '5000'
+        CONTAINER_PORT = '80'
+        INTERNAL_PORT = '8080'
     }
 
     stages {
@@ -33,8 +34,8 @@ pipeline {
                     // Stop and remove existing container if it exists
                     sh "docker rm -f ${CONTAINER_NAME} || true"
                     
-                    // Run Docker container on port 5000
-                    sh "docker run -d -p ${CONTAINER_PORT}:5000 --name ${CONTAINER_NAME} ${DOCKER_REPO}:${DOCKER_TAG}"
+                    // Run Docker container, mapping port 80 on the host to port 8080 in the container
+                    sh "docker run -d -p ${CONTAINER_PORT}:${INTERNAL_PORT} --name ${CONTAINER_NAME} ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
         }
