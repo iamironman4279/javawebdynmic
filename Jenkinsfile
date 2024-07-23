@@ -31,11 +31,12 @@ pipeline {
             steps {
                 script {
                     // Log in to DockerHub
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
-                        // Tag and push Docker image
-                        sh "docker tag ${IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_REPO}:${env.BUILD_NUMBER}"
-                        sh "docker push ${DOCKER_REPO}:${env.BUILD_NUMBER}"
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin ${DOCKER_REGISTRY}"
                     }
+                    // Tag and push Docker image
+                    sh "docker tag ${IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_REPO}:${env.BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_REPO}:${env.BUILD_NUMBER}"
                 }
             }
         }
