@@ -6,7 +6,7 @@ pipeline {
         DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
         DOCKER_TAG = 'latest'
         KUBERNETES_CONFIG = 'kubernetes-deployment.yaml'
-        KUBE_CREDENTIALS_ID = '1234' // Secret text ID
+        KUBE_CREDENTIALS_ID = '1234' // ID of your Kubernetes credentials in Jenkins
     }
 
     stages {
@@ -37,13 +37,10 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([string(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBE_CONFIG')]) {
+                withCredentials([file(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
                     script {
-                        // Convert secret text to kubeconfig file
-                        sh """
-                            echo "${KUBE_CONFIG}" > kubeconfig
-                            kubectl --kubeconfig=kubeconfig apply -f ${KUBERNETES_CONFIG}
-                        """
+                        // Ensure kubectl is installed and in PATH
+                        sh "kubectl --kubeconfig=${KUBECONFIG} apply -f ${KUBERNETES_CONFIG}"
                     }
                 }
             }
@@ -51,13 +48,9 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                withCredentials([string(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBE_CONFIG')]) {
+                withCredentials([file(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
                     script {
-                        // Use the same kubeconfig file for verification
-                        sh """
-                            echo "${KUBE_CONFIG}" > kubeconfig
-                            kubectl --kubeconfig=kubeconfig get pods
-                        """
+                        sh "kubectl --kubeconfig=${KUBECONFIG} get pods"
                     }
                 }
             }
