@@ -1,42 +1,67 @@
 pipeline {
     agent any
+
     environment {
-        KUBECONFIG = credentials('kubeconfig-id')  // Use Jenkins credentials for kubeconfig
+        // Define environment variables if needed
+        JAVA_HOME = '/usr/lib/jvm/java-11-openjdk'
     }
+
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/iamironman4279/javawebdynmic.git'
+                script {
+                    // Checkout code from GitHub
+                    checkout([$class: 'GitSCM', 
+                              branches: [[name: '*/main']], 
+                              userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
+                    ])
+                }
             }
         }
+
         stage('Build') {
             steps {
                 script {
-                    // Add your build steps here
+                    // Build the Java application
+                    sh './mvnw clean package' // Use this if you're using Maven Wrapper
+                    // sh 'mvn clean package' // Use this if you have Maven installed locally
                 }
             }
         }
-        stage('Deploy to Kubernetes') {
+
+        stage('Test') {
             steps {
                 script {
-                    // Deploy to Kubernetes using kubectl
-                    sh 'kubectl apply -f k8s/deployment.yaml'
-                    sh 'kubectl apply -f k8s/service.yaml'
+                    // Run tests
+                    sh './mvnw test' // Use this if you're using Maven Wrapper
+                    // sh 'mvn test' // Use this if you have Maven installed locally
                 }
             }
         }
-        stage('Verify Deployment') {
+
+        stage('Deploy') {
             steps {
                 script {
-                    // Verify deployment status
-                    sh 'kubectl rollout status deployment/my-deployment'
+                    // Deploy the application
+                    echo 'Deploying to server...'
+                    // Add deployment commands here, e.g., `sh './deploy.sh'`
                 }
             }
         }
     }
+
     post {
+        always {
+            // Actions to always execute after the pipeline
+            echo 'Cleaning up...'
+        }
+        success {
+            // Actions to execute on successful build
+            echo 'Build succeeded!'
+        }
         failure {
-            echo 'Deployment failed.'
+            // Actions to execute on failed build
+            echo 'Build failed.'
         }
     }
 }
