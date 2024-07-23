@@ -1,53 +1,42 @@
 pipeline {
     agent any
-
     environment {
-        KUBERNETES_CONFIG = 'kubernetes-deployment.yaml'
-        KUBE_CREDENTIALS_ID = '1234' // ID of your Kubernetes credentials in Jenkins
+        KUBECONFIG = credentials('kubeconfig-id')  // Use Jenkins credentials for kubeconfig
     }
-
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
-                          userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
-                ])
+                git 'https://github.com/iamironman4279/javawebdynmic.git'
             }
         }
-
-        stage('Deploy to Kubernetes') {
+        stage('Build') {
             steps {
-                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                    script {
-                        // Apply Kubernetes deployment configuration
-                        sh "kubectl apply -f ${KUBERNETES_CONFIG}"
-                    }
+                script {
+                    // Add your build steps here
                 }
             }
         }
-
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Deploy to Kubernetes using kubectl
+                    sh 'kubectl apply -f k8s/deployment.yaml'
+                    sh 'kubectl apply -f k8s/service.yaml'
+                }
+            }
+        }
         stage('Verify Deployment') {
             steps {
-                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                    script {
-                        // Verify the status of the pods
-                        sh "kubectl get pods"
-                        
-                        // Optionally, you can add more checks, like services or deployments
-                        sh "kubectl get svc"
-                        sh "kubectl get deployments"
-                    }
+                script {
+                    // Verify deployment status
+                    sh 'kubectl rollout status deployment/my-deployment'
                 }
             }
         }
     }
-
     post {
-        success {
-            echo "Deployment completed successfully."
-        }
         failure {
-            echo "Deployment failed."
+            echo 'Deployment failed.'
         }
     }
 }
