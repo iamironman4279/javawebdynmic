@@ -4,10 +4,8 @@ pipeline {
     environment {
         IMAGE_NAME = 'bankapp-tomcat'
         DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
-        DOCKER_TAG = 'latest' // Update this to the correct tag
-        CONTAINER_NAME = 'bankapp_container'
-        CONTAINER_PORT = '80'
-        INTERNAL_PORT = '8080'
+        DOCKER_TAG = 'latest'
+        KUBERNETES_CONFIG = 'kubernetes-deployment.yaml'
     }
 
     stages {
@@ -22,7 +20,6 @@ pipeline {
         stage('Pull Docker Image') {
             steps {
                 script {
-                    // Pull Docker image from Docker Hub
                     sh "docker pull ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
@@ -31,11 +28,16 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Stop and remove existing container if it exists
-                    sh "docker rm -f ${CONTAINER_NAME} || true"
-                    
-                    // Run Docker container, mapping port 80 on the host to port 8080 in the container
-                    sh "docker run -d -p ${CONTAINER_PORT}:${INTERNAL_PORT} --name ${CONTAINER_NAME} ${DOCKER_REPO}:${DOCKER_TAG}"
+                    sh "docker rm -f bankapp_container || true"
+                    sh "docker run -d -p 80:8080 --name bankapp_container ${DOCKER_REPO}:${DOCKER_TAG}"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh "kubectl apply -f ${KUBERNETES_CONFIG}"
                 }
             }
         }
@@ -43,8 +45,7 @@ pipeline {
         stage('Verify') {
             steps {
                 script {
-                    // Verify that the container is running
-                    sh "docker ps"
+                    sh "kubectl get pods"
                 }
             }
         }
