@@ -37,7 +37,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                withCredentials([file(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
                     script {
                         sh "kubectl apply -f ${KUBERNETES_CONFIG}"
                     }
@@ -45,9 +45,9 @@ pipeline {
             }
         }
 
-        stage('Verify') {
+        stage('Verify Deployment') {
             steps {
-                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                withCredentials([file(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
                     script {
                         sh "kubectl get pods"
                     }
