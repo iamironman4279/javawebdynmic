@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'bankapp-tomcat'
         DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
-        DOCKER_TAG = '3'
+        DOCKER_TAG = 'latest' // Update this to the correct tag
         CONTAINER_NAME = 'bankapp_container'
         CONTAINER_PORT = '5000'
     }
