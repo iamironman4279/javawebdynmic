@@ -1,62 +1,50 @@
-pipeline {
-    agent any
-
-    environment {
-        IMAGE_NAME = 'bankapp-tomcat'
-        DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
-        DOCKER_TAG = 'latest'
-        KUBERNETES_CONFIG = 'kubernetes-deployment.yaml'
-    }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
-                          userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
-                ])
-            }
-        }
-
-        stage('Pull Docker Image') {
-            steps {
-                script {
-                    sh "docker pull ${DOCKER_REPO}:${DOCKER_TAG}"
-                }
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                script {
-                    sh "docker rm -f bankapp_container || true"
-                    sh "docker run -d -p 80:8080 --name bankapp_container ${DOCKER_REPO}:${DOCKER_TAG}"
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    sh "kubectl apply -f ${KUBERNETES_CONFIG}"
-                }
-            }
-        }
-
-        stage('Verify') {
-            steps {
-                script {
-                    sh "kubectl get pods"
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Pipeline completed successfully."
-        }
-        failure {
-            echo "Pipeline failed."
-        }
-    }
-}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bankapp-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bankapp
+  template:
+    metadata:
+      labels:
+        app: bankapp
+    spec:
+      containers:
+      - name: bankapp-container
+        image: hemanth42079/bankapp-tomcat:latest
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bankapp-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: bankapp
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bankapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bankapp-service
+            port:
+              number: 80
