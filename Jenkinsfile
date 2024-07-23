@@ -2,66 +2,66 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables if needed
-        JAVA_HOME = '/usr/lib/jvm/java-11-openjdk'
+        IMAGE_NAME = 'bankapp-tomcat'
+        DOCKER_REPO = 'hemanth42079/bankapp-tomcat'
+        DOCKER_TAG = 'latest'
+        KUBERNETES_CONFIG = 'kubernetes-deployment.yaml'
+        KUBE_CREDENTIALS_ID = '1234' // ID of your Kubernetes credentials in Jenkins
     }
 
     stages {
         stage('Checkout') {
             steps {
+                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
+                          userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
+                ])
+            }
+        }
+
+        stage('Pull Docker Image') {
+            steps {
                 script {
-                    // Checkout code from GitHub
-                    checkout([$class: 'GitSCM', 
-                              branches: [[name: '*/main']], 
-                              userRemoteConfigs: [[url: 'https://github.com/iamironman4279/javawebdynmic.git']]
-                    ])
+                    sh "docker pull ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
         }
 
-        stage('Build') {
+        stage('Run Docker Container') {
             steps {
                 script {
-                    // Build the Java application
-                    sh './mvnw clean package' // Use this if you're using Maven Wrapper
-                    // sh 'mvn clean package' // Use this if you have Maven installed locally
+                    sh "docker rm -f bankapp_container || true"
+                    sh "docker run -d -p 80:8080 --name bankapp_container ${DOCKER_REPO}:${DOCKER_TAG}"
                 }
             }
         }
 
-        stage('Test') {
+        stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    // Run tests
-                    sh './mvnw test' // Use this if you're using Maven Wrapper
-                    // sh 'mvn test' // Use this if you have Maven installed locally
+                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                    script {
+                        sh "kubectl apply -f ${KUBERNETES_CONFIG}"
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Verify') {
             steps {
-                script {
-                    // Deploy the application
-                    echo 'Deploying to server...'
-                    // Add deployment commands here, e.g., `sh './deploy.sh'`
+                withCredentials([kubeconfigFile(credentialsId: KUBE_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                    script {
+                        sh "kubectl get pods"
+                    }
                 }
             }
         }
     }
 
     post {
-        always {
-            // Actions to always execute after the pipeline
-            echo 'Cleaning up...'
-        }
         success {
-            // Actions to execute on successful build
-            echo 'Build succeeded!'
+            echo "Pipeline completed successfully."
         }
         failure {
-            // Actions to execute on failed build
-            echo 'Build failed.'
+            echo "Pipeline failed."
         }
     }
 }
