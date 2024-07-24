@@ -6,6 +6,6 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 808
+    targetPort: 8080
   selector:
     app: bankapp
